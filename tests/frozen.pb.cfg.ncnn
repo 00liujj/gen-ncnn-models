@@ -1,0 +1,30 @@
+7767517
+28 29
+Input Placeholder_0 0 1 Placeholder_0_out 0=${width} 1=${height} 2=${channels}
+Convolution Conv2D_0 1 1 Placeholder_0_out Conv2D_0_out 0=9 1=3 2=1 3=2 4=-233 5=0 6=243
+BatchNorm FusedBatchNorm_0 1 1 Conv2D_0_out FusedBatchNorm_0_out 0=9
+ReLU6 Relu6_0 1 1 FusedBatchNorm_0_out Relu6_0_out
+ConvolutionDepthWise DepthwiseConv2dNative_0 1 1 Relu6_0_out DepthwiseConv2dNative_0_out 0=9 1=3 2=1 3=1 4=-233 5=0 6=81 7=9
+BatchNorm FusedBatchNorm_1 1 1 DepthwiseConv2dNative_0_out FusedBatchNorm_1_out 0=9
+ReLU6 Relu6_1 1 1 FusedBatchNorm_1_out Relu6_1_out
+Convolution Conv2D_1 1 1 Relu6_1_out Conv2D_1_out 0=18 1=1 2=1 3=1 4=-233 5=0 6=162
+BatchNorm FusedBatchNorm_2 1 1 Conv2D_1_out FusedBatchNorm_2_out 0=18
+ReLU6 Relu6_2 1 1 FusedBatchNorm_2_out Relu6_2_out
+ConvolutionDepthWise DepthwiseConv2dNative_1 1 1 Relu6_2_out DepthwiseConv2dNative_1_out 0=18 1=3 2=1 3=2 4=-233 5=0 6=162 7=18
+BatchNorm FusedBatchNorm_3 1 1 DepthwiseConv2dNative_1_out FusedBatchNorm_3_out 0=18
+ReLU6 Relu6_3 1 1 FusedBatchNorm_3_out Relu6_3_out
+Convolution Conv2D_2 1 1 Relu6_3_out Conv2D_2_out 0=36 1=1 2=1 3=1 4=-233 5=0 6=648
+BatchNorm FusedBatchNorm_4 1 1 Conv2D_2_out FusedBatchNorm_4_out 0=36
+ReLU6 Relu6_4 1 1 FusedBatchNorm_4_out Relu6_4_out
+ConvolutionDepthWise DepthwiseConv2dNative_2 1 1 Relu6_4_out DepthwiseConv2dNative_2_out 0=36 1=3 2=1 3=1 4=-233 5=0 6=324 7=36
+BatchNorm FusedBatchNorm_5 1 1 DepthwiseConv2dNative_2_out FusedBatchNorm_5_out 0=36
+ReLU6 Relu6_5 1 1 FusedBatchNorm_5_out Relu6_5_out
+Convolution Conv2D_3 1 1 Relu6_5_out Conv2D_3_out 0=36 1=1 2=1 3=1 4=-233 5=0 6=1296
+BatchNorm FusedBatchNorm_6 1 1 Conv2D_3_out FusedBatchNorm_6_out 0=36
+ReLU6 Relu6_6 1 1 FusedBatchNorm_6_out Relu6_6_out
+Pooling GlobalAvgPool_0 1 1 Relu6_6_out GlobalAvgPool_0_out 0=1 1=1 2=1 3=0 4=1
+Convolution Conv2D_4 1 1 GlobalAvgPool_0_out Conv2D_4_out 0=2 1=1 2=1 3=1 4=-233 5=0 6=72
+Bias BiasAdd_0 1 1 Conv2D_4_out BiasAdd_0_out 0=2
+Identity IdentityOp_0 1 1 BiasAdd_0_out IdentityOp_0_out
+Identity IdentityOp_1 1 1 IdentityOp_0_out IdentityOp_1_out
+Softmax Softmax_0 1 1 IdentityOp_1_out Softmax_0_out 0=0
