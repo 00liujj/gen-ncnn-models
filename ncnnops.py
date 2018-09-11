@@ -284,12 +284,13 @@ class Conv2D(NCNNOp):
             self.filters = self.node.filters
 
 
-        self.kernel_size = self.kernel.shape[0]
+        self.kernel_size = self.kernel.shape[-1]
         self.dilation = 1
         self.stride = self.strides[1]
         self.pad = -233 if self.padding == "SAME" else self.padding
         self.bias_term = 0
         self.weight_data_size = self.kernel.size
+        self.groups = 1
 
     def genDeclaration(self):
         code = """\
@@ -914,7 +915,7 @@ class MatMul(NCNNOp):
             num_output=self.multiplier.shape[1],
             bias_term = 0,
             weight_data_size = self.multiplier.size,
-            **vars(self),
+            **vars(self)
         )
         return code
 

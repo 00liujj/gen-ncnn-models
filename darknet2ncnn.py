@@ -135,15 +135,15 @@ def buildGraph(config_path, weights_path):
 
             # TODO: This assumes channel last dim_ordering.
             if conv == 'conv':
-                weights_shape = (size, size, prev_layer_filters, filters)
+                weights_shape = (filters, prev_layer_filters, size, size)
                 idx_tf2darknet = [0, 1, 2, 3]
 
             elif conv == 'dconv':
-                weights_shape = (size, size, filters)
+                weights_shape = (filters, size, size)
                 idx_tf2darknet = [0, 1, 2]
 
             elif conv == 'gconv':
-                weights_shape = (size, size, prev_layer_filters//groups, filters//groups, groups)
+                weights_shape = (groups, filters//groups, prev_layer_filters//groups, size, size)
                 idx_tf2darknet = [0, 1, 2, 3, 4]
 
             idxmap = {x: i for i, x in enumerate(idx_tf2darknet)}
@@ -458,3 +458,4 @@ if __name__ == '__main__':
     # 生成子图对应的代码
     mygraph.generateSource('YoloV2', os.path.split(config_path)[1]+'.ncnn', os.path.split(weights_path)[1] + '.ncnn')
 
+    mygraph.generateCaffe(os.path.split(config_path)[1]+'.caffe', os.path.split(weights_path)[1] + '.caffe')

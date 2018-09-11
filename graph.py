@@ -166,6 +166,125 @@ class MyGraph:
             f.write(code)
 
 
+    def generateCaffe(self, modelfile, weightfile):
+        mygraph = self
+        oplist = mygraph.getOpList()
+        import caffe_pb2
+        import numpy as np
+
+        def getBlob(weight):
+            blob = caffe_pb2.BlobProto()
+            blob.raw_data_type = caffe_pb2.FLOAT
+            blob.raw_data = weight.data.tobytes()
+            blob.shape.dim.extend(weight.shape)
+            return blob
+
+        net = caffe_pb2.NetParameter()
+        for i, nodeName in enumerate(oplist):
+            node = mygraph.nodedict[nodeName]
+            op = node.op
+            obj = getattr(ncnnops, op)(mygraph, nodeName)
+            layer = caffe_pb2.LayerParameter()
+            layer.name = node.name
+            layer.top.extend([node.name])
+            layer.bottom.extend(node.input_norm)
+
+            if op == 'DarknetNet':
+                layer.type = 'DataInput'
+                layer.data_input_param.shape.add().dim.extend([1,node.channels,node.height,node.width])
+                layer.data_input_param.filename = './road-car-00.png'
+                layer.transform_param.mean_value.extend([0,0,0])
+                layer.transform_param.scale = 1./255
+            elif op == 'Conv2D' or op == 'DepthwiseConv2dNative':
+                layer.type = 'Convolution'
+                layer.convolution_param.kernel_size.extend([obj.kernel_size])
+                layer.convolution_param.pad.extend([obj.pad])
+                layer.convolution_param.stride.extend([obj.stride])
+                layer.convolution_param.group = obj.groups
+                layer.convolution_param.num_output = obj.filters
+                layer.convolution_param.bias_term = obj.bias_term
+                if len(obj.kernel.shape) == 3:
+                    kernel = np.expand_dims(obj.kernel, 1)
+                else:
+                    kernel = obj.kernel
+                layer.blobs.extend([getBlob(kernel)])
+            elif op == 'FusedBatchNorm':
+                bnlayer = caffe_pb2.LayerParameter()
+                bnlayer.name = node.name + '_bn'
+                bnlayer.batch_norm_param.eps = 0
+                #bnlayer.batch_norm_param.scale_bias = 1
+                bnlayer.bottom.extend(node.input_norm)
+                bnlayer.top.extend([bnlayer.name])
+                bnlayer.type = "BatchNorm"
+                bnlayer.blobs.extend([getBlob(obj.mean)])
+                bnlayer.blobs.extend([getBlob(obj.variance)])
+                bnlayer.blobs.extend([getBlob(np.ones([1,], dtype=np.float32))])
+                net.layer.extend([bnlayer])
+
+                layer.type = 'Scale'
+                layer.scale_param.bias_term = 1
+                layer.bottom.pop()
+                layer.bottom.extend([bnlayer.name])
+                layer.blobs.extend([getBlob(obj.gamma)])
+                layer.blobs.extend([getBlob(obj.beta)])
+                #layer.blobs.extend([getBlob(np.ones([1, ], dtype=np.float32))])
+            elif op == 'Leaky':
+                layer.type = 'ReLU'
+                layer.relu_param.negative_slope = float(obj.slope)
+            elif op == 'BiasAdd':
+                layer.type = 'Bias'
+                layer.blobs.extend([getBlob(obj.bias)])
+            elif op == 'DarknetRegion':
+                layer.type = 'RegionLoss'
+                layer.region_loss_param.num_class = node.classes
+                layer.region_loss_param.num = node.num
+                layer.region_loss_param.softmax = node.softmax
+                layer.region_loss_param.biases.extend(node.anchors)
+                layer.include.add().phase = caffe_pb2.TRAIN
+
+                outlayer = caffe_pb2.LayerParameter()
+                outlayer.name = node.name
+                outlayer.type = "RegionOutput"
+                outlayer.bottom.extend(node.input_norm)
+                outlayer.top.extend([node.name])
+                outlayer.region_output_param.num_class = node.classes
+                outlayer.region_output_param.num = node.num
+                #outlayer.region_output_param.softmax = node.softmax
+                outlayer.region_output_param.biases.extend(node.anchors)
+                outlayer.include.add().phase = caffe_pb2.TEST
+                net.layer.extend([outlayer])
+
+                outlayer = caffe_pb2.LayerParameter()
+                outlayer.name = 'dataout'
+                outlayer.type = "DataOutput"
+                outlayer.bottom.extend(['net_0', node.name])
+                outlayer.data_output_param.data_type = caffe_pb2.DataOutputParameter.DETECTION
+                outlayer.data_output_param.out_type = "SHOW0"
+                outlayer.include.add().phase = caffe_pb2.TEST
+                net.layer.extend([outlayer])
+
+            else:
+                print('cannot convert Layer ' + op + ' to caffe')
+                #assert False
+
+            #print("add layer ", layer)
+            net.layer.extend([layer])
+
+        def proto2str(proto):
+            from google.protobuf import text_format
+            return text_format.MessageToString(proto, float_format='-g')
+
+        with open(weightfile, 'wb') as f:
+            f.write(net.SerializeToString())
+
+        with open(modelfile, 'w') as f:
+            for l in net.layer:
+                while len(l.blobs) > 0:
+                    l.blobs.pop()
+            f.write(proto2str(net))
+
+
+
     def defineInputNodes(self, input_nodes):
         ### 加入输入节点
         for nodeName in input_nodes:
