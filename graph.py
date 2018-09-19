@@ -192,7 +192,7 @@ class MyGraph:
             if op == 'DarknetNet':
                 layer.type = 'DataInput'
                 layer.data_input_param.shape.add().dim.extend([1,node.channels,node.height,node.width])
-                layer.data_input_param.filename = './road-car-00.png'
+                layer.data_input_param.source.extend(['./road-car-00.png'])
                 layer.transform_param.mean_value.extend([0,0,0])
                 layer.transform_param.scale = 1./255
             elif op == 'Conv2D' or op == 'DepthwiseConv2dNative':
@@ -236,7 +236,7 @@ class MyGraph:
                 layer.blobs.extend([getBlob(obj.bias)])
             elif op == 'DarknetRegion':
                 layer.type = 'RegionLoss'
-                layer.region_loss_param.num_class = node.classes
+                layer.region_loss_param.classes = node.classes
                 layer.region_loss_param.num = node.num
                 layer.region_loss_param.softmax = node.softmax
                 layer.region_loss_param.biases.extend(node.anchors)
@@ -247,9 +247,9 @@ class MyGraph:
                 outlayer.type = "RegionOutput"
                 outlayer.bottom.extend(node.input_norm)
                 outlayer.top.extend([node.name])
-                outlayer.region_output_param.num_class = node.classes
+                outlayer.region_output_param.classes = node.classes
                 outlayer.region_output_param.num = node.num
-                #outlayer.region_output_param.softmax = node.softmax
+                outlayer.region_output_param.softmax = node.softmax
                 outlayer.region_output_param.biases.extend(node.anchors)
                 outlayer.include.add().phase = caffe_pb2.TEST
                 net.layer.extend([outlayer])
